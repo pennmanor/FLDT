@@ -31,13 +31,19 @@ program, which heavily used this software, can be found
 #### Prerequisites
 * Node.js
 * Redis
-* A NFS export of /images
+* CPIO
+* A NFS export of image files located at `/images`
 * A DHCP server configured for PXE booting, along with TFTPd
 * A compiled Linux kernel with support for your hardware, devtmpfs, and NFS filesystems.
+
+The information listed below will provide generic instructions on the setup process.
 
 #### Installation
 Basic installation is as follows:
 ```bash
+# Clone the project and project files
+git clone http://github.com/tomswartz07/FLDT
+
 # Install Node.js dependencies
 cd FLDT/server
 npm install
@@ -50,6 +56,8 @@ cp -r images/* /var/lib/tftpboot
 
 Next, set up a PXE infrastructure to boot the generated images.
 For further information on this process, refer to the [PXELINUX project](http://www.syslinux.org/wiki/index.php/PXELINUX).
+
+A detailed guide for setting up the PXE boot environment is found on the [ArchWiki](https://wiki.archlinux.org/index.php/PXE#Server_setup).
 
 #### Creating an Image
 The default imaging scripts expect these items in an image:
