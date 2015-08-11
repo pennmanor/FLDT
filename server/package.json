@@ -1,16 +1,16 @@
 {
 	"name": "FLDT",
-	"description": "Server-side interface for FLDT",
-	"version": "0.0.2",
+	"description": "Fast Linux Deployment Toolkit, created for Penn Manor School District",
+	"version": "0.1.0",
 	"dependencies": {
 		"express": "<4.0",
-		"body-parser": "*",
-		"morgan": "*",
-		"serve-index": "*",
-		"serve-static": "*",
-		"net": "*",
-		"redis": "*",
-		"redis-server": "*",
-		"jshtml-express": "*"
+		"body-parser": "1.13.2",
+		"morgan": "1.6.1",
+		"serve-index": "1.7.1",
+		"serve-static": "1.10.0",
+		"net": "1.0.2",
+		"redis": "0.12.1",
+		"redis-server": "0.0.1",
+		"jshtml-express": "0.0.1"
 	}
 }

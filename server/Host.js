@@ -12,7 +12,8 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-   */
+
+*/
 
 var fs = require("fs"),
     hostDB = new Array(),
@@ -20,54 +21,54 @@ var fs = require("fs"),
 
 function loadCSV(path)
 {
-	fs.readFile(path, function(err, data) 
-			{
-				if ( !err )
-	{
-		lines = data.toString().split("\n");
-		for ( var i = 0; i < lines.length; i++ )
-	{
-		d = lines[i].toString().split(",");
-		addHost(d[0], d[3]);
-	}
-	}
-			});
+        fs.readFile(path, function(err, data)
+                        {
+                                if ( !err )
+                                {
+                                        lines = data.toString().split("\n");
+                                        for ( var i = 0; i < lines.length; i++ )
+                                        {
+                                                d = lines[i].toString().split(",");
+                                                addHost(d[0], d[3]);
+                                        }
+                                }
+                        });
 }
 
 
 function addHost(hostname, mac)
 {
-	if ( hostname == undefined || mac == undefined )
-		return false;
-	redis.set("host"+hostname, mac);
-	redis.set("mac"+mac, hostname);
+        if ( hostname == undefined || mac == undefined )
+                return false;
+        redis.set("host"+hostname, mac);
+        redis.set("mac"+mac, hostname);
 }
 
 function resetHosts()
 {
-	redis.flushdb();
+        redis.flushdb();
 }
 
 function getNumHosts(callback)
 {
-	redis.keys("host*", function(err, res) {
-		callback(res.length);
-	})
+        redis.keys("host*", function(err, res) {
+                callback(res.length);
+        })
 }
 
 function getHosts(callback)
 {
-	redis.keys("host*", function(err, res) {
-		callback(res);
-	})
+        redis.keys("host*", function(err, res) {
+                callback(res);
+        })
 }
 
 function getHostnameByMAC(mac, callback)
 {
-	redis.get("mac"+mac, function(err, data)
-			{
-				callback(data);
-			});
+        redis.get("mac"+mac, function(err, data)
+                        {
+                                callback(data);
+                        });
 }
 
 exports.loadCSV = loadCSV;
