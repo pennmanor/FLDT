@@ -137,6 +137,12 @@ After modifying `/etc/exports`, it is necessary to refresh the service via the c
 
 Finally, (re)start the NFS server via the command: `systemctl start nfs-server.service`
 
+If the `nfs-server.service` fails to start, add the following parameters to `/run/sysconfig/nfs-utils` for the `RPCMOUNTDARGS` variable:
+
+```bash
+RPCMOUNTDARGS="-N 2 -N 3"
+```
+
 ### FLDT
 Next, set up the FLDT services.
 ```bash
