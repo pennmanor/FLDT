@@ -19,7 +19,7 @@ redis = Redis(host=redishost, port=redisport, db=redisdb)
 
 @app.route("/")
 def index():
-    "Root webpage path, redirect to /images, since it's more useful"
+    "Root webpage path, contains a useful `Getting Started` guide"
     return render_template('/index.html')
 
 

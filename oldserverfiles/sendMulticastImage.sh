@@ -13,6 +13,6 @@ do
         if [ $2 = "" ]; then
                 udp-sender < $f
         else
-                udp-sender --min-receivers $2 < $f
+                udp-sender --full-duplex --min-receivers $2 < $f
         fi
 done
