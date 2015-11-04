@@ -14,7 +14,8 @@
 		Multicast is active.</br>
                 Deploying image <code>{{ selectedImage }}</code> - Process ID: <code>{{ pid }}</code>
 	</div>
-        <form method="post" action="/multicast?inProgress=False">
+        <form method="post">
+		<input type="hidden" name="inProgress" value="False">
                 <input type="submit" class="btn btn-danger pull-right" value="Kill Multicast">
         </form>
         {%- else -%}
@@ -22,11 +23,11 @@
                 The currently active image is <code>{{ selectedImage }}</code> and will <code>{{ postImageAction }}</code> after completion.</br>
 		Choose the active image on the <a href="/images" class="alert-link">Image Management</a> page.
 	</div>
-	<form method="post" action="/multicast?inProgress=True&autostart=">
-		<input type="hidden" name="inProgress" value="true">
-		<div class="input-group col-md-5 pull-left">
+	<form method="post">
+		<input type="hidden" name="inProgress" value="True">
+		<div class="input-group col-md-6 pull-left">
 			<span class="input-group-addon">Autostart multicast imaging after</span>
-			<input type="text" name="autostart" value="47" class="form-control">
+                        <input type="text" name="minClients" id="minClients" value="{{ minClients }}" class="form-control">
 			<span class="input-group-addon">devices connect</span>
 		</div>
 		<input type="submit" class="btn btn-success pull-right" value="Start Multicast">

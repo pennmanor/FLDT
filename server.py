@@ -15,6 +15,8 @@ redishost = config['db']['host']
 redisport = config['db']['port']
 redisdb = config['db']['db']
 redis = Redis(host=redishost, port=redisport, db=redisdb)
+global osDir
+osDir = config['setup']['imagepath']
 
 
 @app.route("/")
@@ -81,6 +83,7 @@ def hostnamequery():
     "API to return hostname based upon MAC address, used by clients during PXE install"
     if request.method == 'POST':
         # Do some magic to set hostname, maybe?
+        # Could allow for offline enrolment, similar to FOG
         return 'yes'
     elif request.method == 'GET':
         try:
@@ -96,10 +99,8 @@ def hostnamequery():
         return error
 
 
-@app.route("/images/", methods=['GET', 'POST'])
+@app.route("/images/")
 def images(images=['']):
-    global osDir
-    osDir = config['setup']['imagepath']
     images = os.listdir(osDir)
     return render_template('images.html', images=images, osDir=osDir)
 
@@ -124,7 +125,7 @@ def hosts():
                         redis.set("host"+row[0], "mac"+row[1])
                     return redirect('/hosts')
                 except:
-                    print('Fail!')
+                    print('CSV Parse Fail!')
     return render_template('hosts.html', nHosts=nHosts, clients=clients)
 
 
@@ -135,9 +136,19 @@ def allowed_file(filename):
 
 
 @app.route("/multicast", methods=['GET', 'POST'])
-def multicast(inProgress=False, minClients=10):
+def multicast(inProgress=False, minClients='47'):
     "Configures the MulticastManager Processes"
     import subprocess
+    global cmd
+    global pid
+    try:
+        pid
+    except NameError:
+        pid = None
+    try:
+        cmd
+    except NameError:
+        cmd = None
     try:
         inProgress = redis.get('inProgress').decode('UTF-8')
     except AttributeError:
@@ -153,19 +164,24 @@ def multicast(inProgress=False, minClients=10):
     except BaseException:
         redis.set('postImageAction', 'shell')
         postImageAction = redis.get('postImageAction').decode('UTF-8')
-    cmd = subprocess.Popen(['ls', '-l'], stdout=subprocess.PIPE, shell=True)
-    pid = cmd.pid
     if request.method == 'POST':
-        current = request.args.get('inProgress', '')
-        minClients = request.args.get('autostart', '')
-        redis.set('inProgress', current)
-        return redirect('/multicast')
-#    elif request.method == 'GET':
-#        postImageAction = redis.get('postImageAction').decode('UTF-8')
-#        return postImageAction
-#    else:
-#        error = 'Guru Meditation #03.02'
-#        return error
+        currentStatus = request.form.get('inProgress', '')
+        minClients = request.form.get('minClients', '')
+        redis.set('inProgress', currentStatus)
+        if currentStatus == 'True':
+            print("Starting process")
+            udpCommand = ["oldserverfiles/sendMulticastImage.sh", osDir, selectedImage, minClients]
+            cmd = subprocess.Popen(udpCommand, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+            pid = cmd.pid
+            return redirect('/multicast')
+        elif currentStatus == 'False':
+            subprocess.Popen(["pkill", "udp-sender"])
+            return redirect('/multicast')
+    if cmd != None:
+        if cmd.poll() != 0:
+            status = cmd.poll()
+            print("Status:", status)
+            redis.set('inProgress', False)
     return render_template('multicast.html', minClients=minClients,
                            pid=pid, selectedImage=selectedImage,
                            inProgress=inProgress, postImageAction=postImageAction)
@@ -173,4 +189,4 @@ def multicast(inProgress=False, minClients=10):
 
 if __name__ == "__main__":
     serverport = int(config['setup']['http_port'])
-    app.run(port=serverport, debug=True)
+    app.run(host='0.0.0.0',port=serverport)

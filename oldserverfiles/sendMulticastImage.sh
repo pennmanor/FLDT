@@ -1,18 +1,19 @@
 #!/bin/sh
 
-IMAGE_NAME="$1"
+IMAGE_PATH="$1"
+IMAGE_NAME="$2"
 
 if [ "$1" = "" ]; then
-        echo "Usage: sendMulticastImage.sh IMAGE_NAME [MIN_CLIENTS]"
+        echo "Usage: sendMulticastImage.sh IMAGE_PATH IMAGE_NAME [MIN_CLIENTS]"
         exit
 fi
 
-for f in `find /images/$IMAGE_NAME/sd* -type f | sort -nr`
+for f in `find $IMAGE_PATH/$IMAGE_NAME/sd* -type f | sort -nr`
 do
         echo "Starting multicast for $f"
-        if [ $2 = "" ]; then
+        if [ $3 = "" ]; then
                 udp-sender < $f
         else
-                udp-sender --full-duplex --min-receivers $2 < $f
+                udp-sender --full-duplex --min-receivers $3 < $f
         fi
 done
