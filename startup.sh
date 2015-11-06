@@ -31,5 +31,6 @@ systemctl restart dnsmasq.service
 echo "Starting Redis"
 redis-server &
 echo "Starting FLDT service"
-node $FLDTPATH/server/server.js
+python $FLDTPATH/server.py
 echo "Done. FLDT is now ready to use"
+xdg-open http://localhost:8080

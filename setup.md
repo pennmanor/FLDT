@@ -4,7 +4,6 @@ Setup process has been tested for ArchLinux, but should be similar for Ubuntu or
 
 ArchLinux was chosen because of the completeness of their documentation with regard to the individual software parts.
 
-**NOTE: This project is currently using a depreciated version of Expressjs. A major revision is being planned to continue support for the future.**
 
 ## Prerequisites
 
@@ -17,7 +16,7 @@ Install the required software as follows:
 
 ```bash
 # FLDT required
-pacman -S nodejs redis cpio git udpcast partclone
+pacman -S redis cpio git udpcast partclone
 
 # PXE required
 pacman -S dnsmasq darkhttpd nfs-utils
@@ -28,8 +27,8 @@ pacman -S dnsmasq darkhttpd nfs-utils
 ### Files for FLDT
 Make a folder to store the deployable images. This shared folder will be configured in the NFS exports section.
 ```bash
-mkdir /images/ # Root folder for all images
-mkdir /images/DeployableImage # Folder containing all files needed for DeployableImage's image
+mkdir -p /images/ # Root folder for all images
+mkdir -p /images/DeployableImage # Folder containing all files needed for DeployableImage's image
 ```
 For this setup, a Jenkins/Hudson instance creates a new image daily, which is copied to a server.
 The image is created using [Packer](http://packer.io) to automate all steps of the process.
@@ -62,6 +61,8 @@ If you have extra scripts to add (there are a few included here) run `makeimage.
 Several services must be configured before FLDT may run.
 
 ### dnsmasq
+DNSMasq provides basic DHCP and PXE configuration. This allows the devices you wish to set up to be network-booted.
+
 Edit the file `/etc/dnsmasq.conf` to add the following:
 ```bash
 # Disables DNS function, only enabling DHCP and TFTP
@@ -90,11 +91,11 @@ Finally (re)start the dnsmasq service, and optionally watch the output as device
 ```bash
 ip addr add 10.0.0.1/24 dev «DEVICE NAME» # Start eth device with address for PXE booting
 systemctl restart dnsmasq.service
-journalctl -u dnsmasq.service -f # Optional
+journalctl -u dnsmasq.service -f # Optional; watch DHCP connection info
 ```
 
 ### NFS
-Configure the NFS shares on the system.
+Configure the NFS shares on the system. These file shares allow the client computers to access the image files.
 
 You might need to set up ID mapping for a domain. This is optional.
 First, set up the ID mapping, and set the Domain: `/etc/imapd.conf`
@@ -111,7 +112,8 @@ Nobody-User = nobody
 Nobody-Group = nobody
 ```
 
-Next, configure the NFS root export. For security reasons, it is recommended to use an NFS export root which will keep users limited to that mount point only.
+Next, configure the NFS root export.
+For security reasons, it is recommended to use an NFS export root which will keep users limited to that mount point only.
 Define shares in `/etc/exports` which are relative to the NFS root.
 
 ```bash
@@ -133,7 +135,7 @@ Next, add directories to be shared (and IP addresses of who will access them) to
 /srv/nfs4/images *(rw,no_subtree_check,nohide)
 # Note the nohide option which is applied to mounted directories on the file system.
 ```
-If the imaging server will be exclusively offline, then 'global' permission may be set up as noted above. **Use this option with extreme caution.**
+If the imaging server will be exclusively offline (i.e. not on the local network), then 'global' permission may be set up as noted above. **Use this option with extreme caution.**
 
 After modifying `/etc/exports`, it is necessary to refresh the service via the command: `exportfs -rav`
 
@@ -191,7 +193,7 @@ systemctl restart dnsmasq
 redis-server &
 
 # Start FLDT
-node server/server.js
+python server.py
 # FLDT can now be accessed via web browser: http://localhost:8080
 ```
 Alternately, a simple setup script has been provided in the root of the FLDT folder.
