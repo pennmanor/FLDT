@@ -1,0 +1,215 @@
+{
+    "variables":{
+        "version":"01",
+        "sharedfolder_path":"./",
+        "partclone_image":"testing",
+        "hostname":"fldt-packer",
+        "viewmode":"true"
+    },
+    "builders":[
+        {
+            "type":"vmware-iso",
+            "headless" : "true",
+            "skip_compaction" : "true",
+            "guest_os_type":"ubuntu-64",
+            "ssh_username":"user",
+            "ssh_password":"password",
+            "ssh_wait_timeout":"60m",
+            "shutdown_command":"echo 'password' | sudo -S shutdown -P now",
+            "http_directory":"files",
+            "iso_url":"http://it.pennmanor.net/ubuntu-14.04.2-desktop-amd64.iso",
+            "iso_checksum":"1b305d585b1918f297164add46784116",
+            "iso_checksum_type":"md5",
+            "output_directory":"build",
+            "vm_name":"packer{{user `version`}}",
+            "boot_command":[
+                "<esc><esc><esc><enter><wait>",
+                "/casper/vmlinuz.efi ",
+                "initrd=/casper/initrd.lz noprompt ",
+                "url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/preseed.cfg ",
+                "automatic-ubiquity ubiquity/summary ",
+                "ubiquity/use_nonfree=true ubiquity/nonfree_package=openssh-server ",
+                "ubiquity/reboot=true ",
+                "languagechooser/language-name=English countrychooser/shortlist=US localechooser/supported-locales=en_US.UTF-8 ",
+                "boot=casper only-ubiquity ",
+                "-- <enter>"
+            ],
+            "boot_wait":"5s",
+            "tools_upload_flavor":"linux",
+            "disk_size":40960,
+            "disk_type_id":0,
+            "vmx_data":{
+                "memsize":"2048",
+                "numvcpus":"1",
+                "sharedFolder0.present":"TRUE",
+                "sharedFolder0.enabled":"TRUE",
+                "sharedFolder0.readAccess":"TRUE",
+                "sharedFolder0.writeAccess":"TRUE",
+                "sharedFolder0.hostPath":"{{user `sharedfolder_path`}}",
+                "sharedFolder0.guestName":"packer",
+                "sharedFolder0.expiration":"never",
+                "sharedFolder.maxNum":"1",
+                "isolation.tools.hgfs.disable":"FALSE"
+            }
+        },
+        {
+            "type":"virtualbox-iso",
+            "headless":"{{user `viewmode`}}",
+            "guest_os_type":"Ubuntu_64",
+            "ssh_username":"user",
+            "ssh_password":"password",
+            "ssh_wait_timeout":"1h",
+            "shutdown_command":"echo 'password' | sudo -S shutdown -P now",
+            "iso_urls":[
+                "http://it.pennmanor.net/ubuntu-14.04.2-desktop-amd64.iso",
+                "http://releases.ubuntu.com/14.04/ubuntu-14.04.3-desktop-amd64.iso"
+            ],
+            "iso_checksum":"1b305d585b1918f297164add46784116",
+            "iso_checksum_type":"none",
+            "output_directory":"build",
+            "vm_name":"packer{{user `version`}}",
+            "boot_command":[
+                "<esc><esc><esc><enter><wait>",
+                "/casper/vmlinuz.efi ",
+                "initrd=/casper/initrd.lz noprompt ",
+                "url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/preseed.cfg ",
+                "automatic-ubiquity ubiquity/summary ",
+                "ubiquity/use_nonfree=true ubiquity/nonfree_package=openssh-server ",
+                "ubiquity/reboot=true ",
+                "languagechooser/language-name=English countrychooser/shortlist=US localechooser/supported-locales=en_US.UTF-8 ",
+                "boot=casper only-ubiquity ",
+                "-- <enter>"
+            ],
+            "boot_wait":"5s",
+            "vboxmanage":[
+                ["sharedfolder", "add", "{{ .Name }}", "--name", "files", "--hostpath", "{{user `sharedfolder_path`}}", "--automount"],
+                ["modifyvm", "{{ .Name }}", "--memory", "3069"],
+                ["modifyvm", "{{ .Name }}", "--vram", "64"]
+            ]
+        }
+    ],
+    "provisioners":[
+        {
+            "type":"shell",
+            "inline":[
+                "apt-get update"
+            ],
+            "execute_command":"echo 'password' | {{ .Vars }} sudo -E -S sh '{{ .Path }}'"
+        },
+        {
+            "type":"shell",
+            "inline":[
+                "apt-get dist-upgrade -y && reboot",
+                "sleep 60"
+            ],
+            "execute_command":"echo 'password' | {{ .Vars }} sudo -E -S sh '{{ .Path }}'"
+        },
+        {
+            "type":"shell",
+            "inline":[
+                "echo {{ user `hostname`}} > /etc/hostname",
+                "sed -i 's/ubuntu/{{ user `hostname`}}/g' /etc/hosts",
+                "reboot",
+                "sleep 60"
+            ],
+            "execute_command":"echo 'password' | {{ .Vars }} sudo -E -S sh '{{ .Path }}'"
+        },
+        {
+            "type":"shell",
+            "inline":[
+                "apt-get install -y linux-headers-$(uname -r) build-essential perl git",
+                "apt-get install -y dkms",
+                "reboot",
+                "sleep 60"
+            ],
+            "execute_command":"echo 'password' | {{ .Vars }} sudo -E -S sh '{{ .Path }}'"
+        },
+        {
+            "type":"shell",
+            "inline":[
+                "echo '=> Installing VMware Tools'",
+                "cd /tmp",
+                "mkdir -p /mnt/cdrom",
+                "mount -o loop /home/user/linux.iso /mnt/cdrom",
+                "git clone https://github.com/rasa/vmware-tools-patches.git",
+                "cd vmware-tools-patches",
+                "cp /mnt/cdrom/VMwareTools-* .",
+                "./untar-all-and-patch.sh",
+                "./vmware-tools-distrib/vmware-install.pl -d",
+                "rm /home/user/linux.iso",
+                "umount /mnt/cdrom",
+                "rmdir /mnt/cdrom",
+                "rm -rf /tmp/vmware-tools-patches",
+                "reboot",
+                "sleep 60"
+            ],
+            "execute_command":"echo 'password' | {{ .Vars }} sudo -E -S sh '{{ .Path }}'",
+            "only":["vmware-iso"]
+        },
+        {
+            "type":"shell",
+            "inline":[
+                "echo '=> Installing VBox Tools'",
+                "apt-get install -y linux-headers-$(uname -r) build-essential perl dkms",
+                "VBOX_VERSION=$(cat /home/user/.vbox_version)",
+                "mount -o loop /home/user/VBoxGuestAdditions_$VBOX_VERSION.iso /mnt",
+                "sh /mnt/VBoxLinuxAdditions.run --nox11",
+                "umount /mnt",
+                "rm /home/user/VBoxGuestAdditions_$VBOX_VERSION.iso",
+                "sudo ln -s /opt/VBoxGuestAdditions-$VBOX_VERSION/lib/VBoxGuestAdditions /usr/lib/VBoxGuestAdditions",
+                "reboot",
+                "sleep 60"
+            ],
+            "execute_command" : "echo 'password' | {{ .Vars }} sudo -E -S sh '{{ .Path }}'",
+            "only":["virtualbox-iso"]
+        },
+        {
+            "type":"shell",
+            "inline":[
+                "apt-get dist-upgrade -y"
+            ],
+            "execute_command":"echo 'password' | {{ .Vars }} sudo -E -S sh '{{ .Path }}'"
+        },
+        {
+            "type":"shell",
+            "inline":[
+                "echo '=> VMWare Capturing Image File'",
+                "apt-get clean",
+                "umount /boot",
+                "mkdir /realboot",
+                "mount /dev/sda1 /realboot",
+                "cp -ar /realboot/* /boot/",
+                "umount /realboot",
+                "rm -Rf /realboot",
+                "lvcreate -L 5G -s -n clone /dev/ubuntu-vg/root",
+                "apt-get install partclone -y",
+                "partclone.ext4 -c -s /dev/ubuntu-vg/clone -o /mnt/hgfs/packer/{{user `partclone_image`}}",
+                "lvremove -f /dev/ubuntu-vg/clone"
+            ],
+            "execute_command":"echo 'password' | {{ .Vars }} sudo -E -S sh '{{ .Path }}'",
+            "only":["vmware-iso"]
+        },
+        {
+            "type" : "shell" ,
+            "inline" : [
+                "echo '=> VBox Capturing Image File'",
+                "apt-get clean",
+                "umount /boot",
+                "mkdir /realboot",
+                "mount /dev/sda1 /realboot",
+                "cp -ar /realboot/* /boot/",
+                "umount /realboot",
+                "rm -Rf /realboot",
+                "lvcreate -L 5G -s -n clone /dev/ubuntu-vg/root",
+                "mkdir /media/files",
+                "mount -t vboxsf files /media/files",
+                "apt-get install partclone -y",
+                "partclone.ext4 -c -s /dev/ubuntu-vg/clone -o /media/files/{{user `partclone_image`}}",
+                "umount /media/files",
+                "lvremove -f /dev/ubuntu-vg/clone"
+            ],
+            "execute_command" : "echo 'password' | {{ .Vars }} sudo -E -S sh '{{ .Path }}'",
+            "only":["virtualbox-iso"]
+        }
+    ]
+}

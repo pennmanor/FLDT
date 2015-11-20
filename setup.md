@@ -16,55 +16,53 @@ Install the required software as follows:
 
 ```bash
 # FLDT required
-pacman -S redis cpio git udpcast partclone
+pacman -S python-pip redis cpio git partclone
 
 # PXE required
 pacman -S dnsmasq darkhttpd nfs-utils
+
+#udpcast from AUR
+yaourt -S udpcast
 ```
 
 ## Required Files
 
 ### Files for FLDT
+For this documentation, we're storing FLDT files in the home folder and the image we want to deploy is titled 'DeployableImage'. Clone FLDT and change into it's directory.
+```bash
+cd ~
+git clone http://github.com/tomswartz07/FLDT
+cd FLDT
+```
+
 Make a folder to store the deployable images. This shared folder will be configured in the NFS exports section.
 ```bash
-mkdir -p /images/ # Root folder for all images
-mkdir -p /images/DeployableImage # Folder containing all files needed for DeployableImage's image
+mkdir -p /images # Root folder for all images
+mkdir -p /images/DeployableImage # Contains files needed for DeployableImage's image
 ```
-For this setup, a Jenkins/Hudson instance creates a new image daily, which is copied to a server.
-The image is created using [Packer](http://packer.io) to automate all steps of the process.
-At the conclusion of the Packer build, Jenkins runs partclone to generate a `build.img`.
-The `build.img` file is then rsync'ed to a server as sda1
-
-The default imaging scripts expect these items to deploy an image:
-
-* A folder in /image with the folder's name
-* Each partimage image for each partition named with the drive name (i.e. The file named sda1 will be restored to /dev/sda1)
-* A sfdisk generated partitiontable.txt
-
 
 ### Files for Support Services
 A tarball of the files needed for bootstrapping PXE are included in `pxeboot.tar.gz`
 
-The tarball includes a very small (17kB) PXE kernel, a vesa bootmenu, and bootable x64/386 linux kernels provided by [Popcorn Linux](http://www.popcornlinux.org/).
+The tarball includes a very small (17kB) PXE kernel, a VESA bootmenu, and bootable x86_32/x86_64 Linux kernels provided by [Popcorn Linux](http://www.popcornlinux.org/).
 
 These files will be supplemented via the FLDT-generated deployment images.
 ```bash
 mkdir /pxeboot
-cp /path/to/pxeboot.tar.gz /pxeboot
-tar xzvf /pxeboot/pxeboot.tar.gz /pxeboot
+cp pxeboot.tar.gz /pxeboot
+cd /pxeboot
+tar xzvf pxeboot.tar.gz
 ```
-The `makeimage.sh` script will automatically build in any extra scripts to the PXE image.
-If you have extra scripts to add (there are a few included here) run `makeimage.sh` at this time.
 
 ## Services
 
 Several services must be configured before FLDT may run.
 
-### dnsmasq
+### DNSmasq
 DNSMasq provides basic DHCP and PXE configuration. This allows the devices you wish to set up to be network-booted.
 
 Edit the file `/etc/dnsmasq.conf` to add the following:
-```bash
+```conf
 # Disables DNS function, only enabling DHCP and TFTP
 port=0
 
@@ -87,11 +85,14 @@ dhcp-option-force=209,pxelinux.cfg/default
 enable-tftp
 tftp-root=/pxeboot
 ```
-Finally (re)start the dnsmasq service, and optionally watch the output as devices connect
+Finally (re)start the dnsmasq service. For future reference, you can watch the DHCP service log for troubleshooting.
 ```bash
-ip addr add 10.0.0.1/24 dev «DEVICE NAME» # Start eth device with address for PXE booting
+# Bring up network interface with specified address
+ip addr add 10.0.0.1/24 dev «DEVICE NAME»
+# (Re)start the dnsmasq service
 systemctl restart dnsmasq.service
-journalctl -u dnsmasq.service -f # Optional; watch DHCP connection info
+# Optional; watch DHCP server log
+journalctl -u dnsmasq.service -f
 ```
 
 ### NFS
@@ -141,30 +142,50 @@ After modifying `/etc/exports`, it is necessary to refresh the service via the c
 
 Finally, (re)start the NFS server via the command: `systemctl start nfs-server.service`
 
-These NFS shares will be from where the images themselves are served to the clients.
-Each folder within the `/images` directory should contain the files needed for imaging.
-
-There are three files that are needed for imaging a device:
-
-1. `sda1` : a file named after each drive and partition
-2. `partitiontable.txt` : a text file with partitions used for setting drive partition size
-3. `postimage.sh` : a script that contains actions to perform following the image install
-
-The `partitiontable.txt` file will be generated once FLDT is up and running, but prior to imaging.
-
 ### FLDT
-Next, set up the FLDT services.
+Next, set up the FLDT services. The `makeimage.sh` script will build the necessary scripts into the PXE bootimage.
+If you have additional scripts to add, they should be copied to `~/FLDT/bootimage/scripts` now.
 ```bash
-cd ~/ # We're storing FLDT files in home folder, for ease of location
-git clone http://github.com/tomswartz07/FLDT
-cd FLDT/bootimage
+cd ~/FLDT/bootimage
+mkdir images # Create the folder where the built images will output
 ./makeimage.sh # Run the script to create bootable images
-cp -r images/* /pxeboot # Move generated images to PXE folder for use
+cp -r images/* /pxeboot # Copy generated images to PXE folder for use
 cd ../server
 npm install # Install FLDT service and dependencies
 redis-server & # Start Redis server,  '&' will fork it to background
-node server.js
+python server.py
 ```
+
+## Creating a deployment image
+For our setup, a [Jenkins](https://jenkins-ci.org/)/[Hudson](https://hudson-ci.org/) instance creates a new image daily, which is copied to a server.
+The image is created using [Packer](http://packer.io) to automate all steps of the process.
+At the conclusion of the Packer build, we obtain a single file that is able to be used by FLDT.
+The `build.img` file is then saved to our FLDT server as `sda1` into it's respective folder in ``/images``
+
+As an example, a basic Packer file has been provided.
+To create a basic deployable image, perform the following:
+
+1. Install [Packer](http://packer.io) using their [setup guide](https://packer.io/intro/getting-started/setup.html).
+2. Begin the image build process:
+
+```bash
+# Basic build
+packer build packer-example.json
+
+# If you prefer to customize the build, change values wrapped in <brackets>:
+packer build -var "version=<$BUILD_ID>" -var "partclone_image=<$IMAGE_NAME>.img"\
+ -var "sharedfolder_path=<$PATH/TO/SHARE>" -var "hostname=<$HOSTNAME>"\
+ -var "viewmode=false" packer-example.json
+```
+
+Packer will automatically set up an installable image, with zero input necessary.
+If you set the `-var` viewmode to 'false', the entire process will occur in a viewable window.
+
+The default imaging scripts expect these items to deploy an image:
+
+* A folder in `/images` with the image's name
+* Each partimage image for each partition named with the device name (i.e. The file named `sda1` will be restored to /dev/sda1, which resides in `/images/DeployableImage`)
+* A sfdisk generated `partitiontable.txt` (should also be in `/images/DeployableImage`)
 
 ## Imaging
 At this point, most of the heavy work is now complete.
