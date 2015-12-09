@@ -1,7 +1,5 @@
 #!/bin/busybox sh
 
-/bin/busybox sh /busyboxinit.sh
-
 mkdir /proc
 mkdir /sys
 mkdir /mnt
@@ -16,7 +14,8 @@ udhcpc -i eth0 -s /etc/udhcpc.script
 
 clear
 echo "Welcome to the Fast Linux Deployment Toolkit"
-echo "Built by Andrew Lobos <andrew@lobos.me>"
+echo "Created by Penn Manor School District"
+echo "Based upon work by Andrew Lobos <andrew@lobos.me>"
 
-sh /image.sh
-setsid sh -c 'exec sh </dev/tty1 >/dev/tty1 2>&1'
+./image.sh
+setsid bash -c 'exec sh </dev/tty1 >/dev/tty1 2>&1'

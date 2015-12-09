@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #  Copyright 2013 Andrew Lobos and Penn Manor School District
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,9 +25,11 @@ echo "I am $HOSTNAME with MAC address $MACADDR"
 
 mount -t nfs4 $IMAGING_SERVER:/images /nfs
 
+# dd = destroyer (of) disks, use with caution.
 #dd if=/nfs/$IMAGE_NAME/mbr.bin of=/dev/sda bs=512 count=1
 
-sfdisk /dev/sda < /nfs/$IMAGE_NAME/partitiontable.txt
+# sfdisk easily handles MBR partitions, but not GPT
+#sfdisk /dev/sda < /nfs/$IMAGE_NAME/partitiontable.txt
 
 # Add Network Route for Mulitcasting
 route add -net 224.0.0.0 netmask 240.0.0.0 dev eth0
@@ -41,16 +43,15 @@ do
 	udp-receiver --mcast-rdv-address 224.0.0.1 | partclone.extfs -r -s - -o /dev/`basename $f` -L /partclone.log
 done
 
-
-# Setup mnt enviorment for chroots
+# Setup mnt environment for chroots
 mount /dev/sda1 /mnt
 
-sh /nfs/$IMAGE_NAME/postimage.sh $HOSTNAME
+/nfs/$IMAGE_NAME/postimage.sh $HOSTNAME
 
 # Reset network rules
 rm -f /mnt/etc/udev/rules.d/70-persistent-net.rules
 
 # Reinstall GRUB in chroot
-sh /fixGrub.sh
+fixGrub.sh
 
 umount /mnt

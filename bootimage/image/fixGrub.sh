@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #  Copyright 2013 Andrew Lobos and Penn Manor School District
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,9 +17,9 @@ mount -t devtmpfs none /mnt/dev
 mount -t proc proc /mnt/proc
 mount -t sysfs sys /mnt/sys
 
-chroot /mnt sh -c "grub-mkdevicemap"
-chroot /mnt sh -c "grub-install /dev/sda --force"
-chroot /mnt sh -c "update-grub"
+chroot /mnt /bin/bash -c "grub-mkdevicemap"
+chroot /mnt /bin/bash -c "grub-install /dev/sda --force"
+chroot /mnt /bin/bash -c "update-grub"
 
 umount /mnt/dev
 umount /mnt/sys

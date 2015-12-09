@@ -1,4 +1,4 @@
-#!/bin/busybox sh
+#!/bin/bash
 # udhcpc Interface Configuration
 # Based on http://lists.debian.org/debian-boot/2002/11/msg00500.html
 
@@ -9,11 +9,11 @@
 
 case "$1" in
         deconfig)
-                /bin/ifconfig $interface 0.0.0.0
+                ifconfig $interface 0.0.0.0
                 ;;
 
         renew|bound)
-                /bin/ifconfig $interface $ip $BROADCAST $NETMASK
+                ifconfig $interface $ip $BROADCAST $NETMASK
                 ;;
 esac
 

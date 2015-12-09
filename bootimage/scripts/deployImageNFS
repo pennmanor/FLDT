@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #  Copyright 2013 Andrew Lobos and Penn Manor School District
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,9 +25,16 @@ echo "I am $HOSTNAME with MAC address $MACADDR"
 
 mount -t nfs4 $IMAGING_SERVER:/images /nfs
 
+# dd = destroyer (of) disks, use with caution.
 #dd if=/nfs/$IMAGE_NAME/mbr.bin of=/dev/sda bs=512 count=1
 
-sfdisk /dev/sda < /nfs/$IMAGE_NAME/partitiontable.txt
+# sfdisk easily handles MBR partitions, but not GPT
+#sfdisk /dev/sda < /nfs/$IMAGE_NAME/partitiontable.txt
+
+# parted allows for GPT disks. Because of the differences
+#  use a different partition file, so it doesn't choke
+parted --pretend-input-tty < /nfs/$IMAGE_NAME/partitions.txt
+parted -l
 
 hdparm -z /dev/sda
 mdev -s
@@ -38,16 +45,15 @@ do
 	partclone.extfs -r -s $f -o /dev/`basename $f` -L /partclone.log
 done
 
+# Setup mnt environment for chroots
+mount -t ext4 /dev/sda1 /mnt
 
-# Setup mnt enviorment for chroots
-mount /dev/sda1 /mnt
-
-sh /nfs/$IMAGE_NAME/postimage.sh $HOSTNAME
+/nfs/$IMAGE_NAME/postimage.sh $HOSTNAME
 
 # Reset network rules
 rm -f /mnt/etc/udev/rules.d/70-persistent-net.rules
 
 # Reinstall GRUB in chroot
-sh /fixGrub.sh
+fixGrub.sh
 
 umount /mnt
