@@ -44,7 +44,7 @@ mkdir -p /images/DeployableImage # Contains files needed for DeployableImage's i
 ### Files for Support Services
 A tarball of the files needed for bootstrapping PXE are included in `pxeboot.tar.gz`
 
-The tarball includes a very small (17kB) PXE kernel, a VESA bootmenu, and bootable x86_32/x86_64 Linux kernels provided by [Popcorn Linux](http://www.popcornlinux.org/).
+The tarball includes a very small (23MB) PXE kernel, a VESA bootmenu, and bootable x86_32/x86_64 Linux kernels provided by [FLDT-Buildroot](https://github.com/pennmanor/FLDT-Buildroot).
 
 These files will be supplemented via the FLDT-generated deployment images.
 ```bash
@@ -143,17 +143,16 @@ After modifying `/etc/exports`, it is necessary to refresh the service via the c
 Finally, (re)start the NFS server via the command: `systemctl start nfs-server.service`
 
 ### FLDT
-Next, set up the FLDT services. The `makeimage.sh` script will build the necessary scripts into the PXE bootimage.
+Next, set up the FLDT services. The `makeimage.sh` script will build the necessary scripts into files that are appended to the PXE bootimage.
+
 If you have additional scripts to add, they should be copied to `~/FLDT/bootimage/scripts` now.
+Each one of the script files will create a new file that you may add to `/pxelinux/pxelinux.cfg/default` to perform different actions.
+
 ```bash
 cd ~/FLDT/bootimage
 mkdir images # Create the folder where the built images will output
 ./makeimage.sh # Run the script to create bootable images
-cp -r images/* /pxeboot # Copy generated images to PXE folder for use
-cd ../server
-npm install # Install FLDT service and dependencies
-redis-server & # Start Redis server,  '&' will fork it to background
-python server.py
+cp -r images/* /pxeboot/. # Copy generated images to PXE folder for use
 ```
 
 ## Creating a deployment image
@@ -181,26 +180,48 @@ packer build -var "version=<$BUILD_ID>" -var "partclone_image=<$IMAGE_NAME>.img"
 Packer will automatically set up an installable image, with zero input necessary.
 If you set the `-var` viewmode to 'false', the entire process will occur in a viewable window.
 
-The default imaging scripts expect these items to deploy an image:
+Next, create a file that FLDT will use to create partitions.
+Essentially, this file tells FLDT how to divide up the client computer's drive.
+
+To easily create this file, continue through the rest of this document without the `partitons.txt` file, and when you PXE boot a device, select 'Boot to Shell'.
+When the device boots, [set up the disk with GNU Parted](https://wiki.archlinux.org/index.php/GNU_Parted) and copy each command into a new line of the `partitons.txt` file.
+Copy this file to your `/images/<IMAGENAME>/` folder and you'll be all set for imaging.
+
+A very basic example of a `partitons.txt` file is as follows:
+```
+mkpart primary ext4 1MiB 20GiB
+set 1 boot on
+mkpart primary ext4 20GiB 100%
+```
+The above will create a simple 20 GiB root partition and a `/home` partiton that uses the remaining space of the drive.
+
+The default imaging scripts expect these items to deploy an image, (for example, titled DeployableImage1):
 
 * A folder in `/images` with the image's name
 * Each partimage image for each partition named with the device name (i.e. The file named `sda1` will be restored to /dev/sda1, which resides in `/images/DeployableImage`)
 * A sfdisk generated `partitiontable.txt` (should also be in `/images/DeployableImage`)
+* A simple bash script with actions to perform after the image has been applied. This can be anything from resetting the default password to simply rebooting the device.
+
+An example folder layout for the /images folder, as expected by FLDT:
+```
+/images
+├─> DeployableImage1
+│ ├─> sda1
+│ ├─> sda2
+│ ├─> partitontable.txt
+│ └─> postimageaction.sh
+└─> DeployableImage2
+  ├─> sda1
+  ├─> partitontable.txt
+  └─> postimageaction.sh
+```
 
 ## Imaging
-At this point, most of the heavy work is now complete.
+At this point, most of the heavy work is now complete. Congrats!
 
-Navigate to http://localhost:8080 to access the FLDT interface
+The only remaining task is to start the FLDT service and begin the imaging process.
 
-Select the image on the Images page, load the hosts .csv as directed on the Hosts page, and finally enter the number of hosts and begin multicasting on the Multicasting page.
-
-As the targeted devices netboot, they should be picked up by the PXE service.
-
-If you do not have a `partitiontable.txt` file already, select 'Boot to Shell' and [set up your disks with fdisk/sfdisk](https://wiki.archlinux.org/index.php/Partitioning#Fdisk_usage_summary).
-You can then capture the data via the command: `sfdisk -d /dev/sda > partitiontable.txt`
-Copy this file to your `/images/<IMAGENAME>/` folder and you'll be all set for imaging.
-
-If FLDT has been previously set up, the following steps are only needed to begin the service after a fresh reboot:
+The following steps will start the process.
 ```bash
 # Navigate to FLDT directory
 cd /path/to/FLDT
@@ -217,5 +238,13 @@ redis-server &
 python server.py
 # FLDT can now be accessed via web browser: http://localhost:8080
 ```
+If FLDT has been previously set up, the above steps are only needed to begin the service after a fresh reboot.
+
 Alternately, a simple setup script has been provided in the root of the FLDT folder.
 To use, simply run `./startup.sh -p /full/FLDT/path -i networkInterfaceName`
+
+Navigate to http://localhost:8080 to access the FLDT interface
+
+Select the image on the Images page, load the hosts .csv as directed on the Hosts page, and finally enter the number of hosts and begin multicasting on the Multicasting page.
+
+As the targeted devices netboot, they should be picked up by the PXE service and begin to image with the file you have created.
