@@ -1,62 +1,62 @@
 {% extends "layout.html" %}
 {% block nav %}
-				<li><a href="/images">Images</a></li>
-				<li class="active"><a href="/hosts">Hosts</a></li>
-				<li><a href="/multicast">Multicast</a></li>
-				<li class="dropdown">
-{% endblock nav %}
-{% block body %}
-<div class="container">
-	<div class="page-header">
-		<h1> Host Management <small>Fast Linux Deployment Toolkit</small></h1>
-	</div>
-	<div class="container">
-		<div class="container-fluid pull-left">
-			<form action="" method="post" enctype="multipart/form-data" class="inline pull-left">
-				<div class="form-group">
-					<label for="file">Upload host CSV:</label>
-					<input type="file" name="file" id="hostcsv">
-					<p class="help-block">File must be a *.csv</p>
-					<button type="submit" class="btn btn-success">Upload Files</button>
-				</div>
-			</form>
-		</div>
-		<div class="container-fluid pull-right">
-		<div class="alert alert-info text-center">
-			This data is used for preparing multicast imaging and auto-naming hosts.</br>
-			Host *.csv files should be of the format: <code>hostname,ethMAC</code></br>
-                        MAC addresses in the *.csv should be all lowercase, and stripped of colons.</br>
-                        Please see <code>testhostnames.csv</code> for an example.
-		</div>
-		</div>
-	</div>
-	<div class="container">
-		<div class="alert alert-warning text-center">
-			<strong>Warning!</strong> Hostname data is stored in volatile memory.</br>
-			<strong>Do not use this as the only source for host information.</strong>
-		</div>
-	</div>
-	<div class="form-group pull-right">
-                <form action = "" method = "post">
-                        <button type="submit" name="hostReset" formaction="/api/resethosts?reset=True" formmethod="POST" class="btn btn-danger">Clear Hosts <span class="badge">{{nHosts}}</span></button>
-                </form>
-	</div>
-	<h3>Currently loaded devices</h3>
-	<table class="table table-hover table-condensed table-bordered">
-                <tr>
-                        <th>Hostname</th>
-                        <th>MAC Address</th>
-                </tr>
-                {% for hostname, macaddr in clients -%}
-                <tr>
-                        <td>{{ hostname.decode('UTF-8')[4:] }}</td>
-                        <td>{{ macaddr.decode('UTF-8')[3:]|d('Undefined') }}</td>
-                </tr>
-                {% else -%}
-                <tr>
-                        <td>Not Available</td>
-                        <td>Not Available</td>
-                </tr>
-                {% endfor %}
-	</div>
-{% endblock body %}
+<li><a href="/images">Images</a></li>
+<li class="active"><a href="/hosts">Hosts</a></li>
+<li><a href="/multicast">Multicast</a></li>
+<li class="dropdown">
+        {% endblock nav %}
+        {% block body %}
+        <div class="container">
+                <div class="page-header">
+                        <h1> Host Management <small>Fast Linux Deployment Toolkit</small></h1>
+                </div>
+                <div class="container">
+                        <div class="container-fluid pull-left">
+                                <form action="" method="post" enctype="multipart/form-data" class="inline pull-left">
+                                        <div class="form-group">
+                                                <label for="file">Upload host CSV:</label>
+                                                <input type="file" name="file" id="hostcsv">
+                                                <p class="help-block">File must be a *.csv</p>
+                                                <button type="submit" class="btn btn-success">Upload Files</button>
+                                        </div>
+                                </form>
+                        </div>
+                        <div class="container-fluid pull-right">
+                                <div class="alert alert-info text-center">
+                                        This data is used for preparing multicast imaging and auto-naming hosts.</br>
+                                        Host *.csv files should be of the format: <code>hostname,ethMAC</code></br>
+                                        MAC addresses in the *.csv should be all lowercase, and stripped of colons.</br>
+                                        Please see <code>testhostnames.csv</code> for an example.
+                                </div>
+                        </div>
+                </div>
+                <div class="container">
+                        <div class="alert alert-warning text-center">
+                                <strong>Warning!</strong> Hostname data is stored in volatile memory.</br>
+                                <strong>Do not use this as the only source for host information.</strong>
+                        </div>
+                </div>
+                <div class="form-group pull-right">
+                        <form action = "" method = "post">
+                                <button type="submit" name="hostReset" formaction="/api/resethosts?reset=True" formmethod="POST" class="btn btn-danger">Clear Hosts <span class="badge">{{nHosts}}</span></button>
+                        </form>
+                </div>
+                <h3>Currently loaded devices</h3>
+                <table class="table table-hover table-condensed table-bordered">
+                        <tr>
+                                <th>Hostname</th>
+                                <th>MAC Address</th>
+                        </tr>
+                        {% for hostname, macaddr in clients -%}
+                        <tr>
+                                <td>{{ hostname.decode('UTF-8')[4:] }}</td>
+                                <td>{{ macaddr.decode('UTF-8')[3:]|d('Undefined') }}</td>
+                        </tr>
+                        {% else -%}
+                        <tr>
+                                <td>Not Available</td>
+                                <td>Not Available</td>
+                        </tr>
+                        {% endfor %}
+        </div>
+        {% endblock body %}
