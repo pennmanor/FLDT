@@ -15,7 +15,7 @@
 
 IMAGING_SERVER="10.0.0.1"
 IMAGING_PORT="8080"
-MACADDR=`ifconfig | grep "eth0" | tr -s ' ' | cut -d ' ' -f5`
+MACADDR=`ifconfig | grep "ether" | tr -s ' ' | cut -d ' ' -f3 | tr -d ':'`
 wget -O hostname http://$IMAGING_SERVER:$IMAGING_PORT/api/hostname?mac=$MACADDR 2> /dev/null
 wget -O currentImage http://$IMAGING_SERVER:$IMAGING_PORT/api/currentImage 2> /dev/null
 HOSTNAME="`cat hostname`"
