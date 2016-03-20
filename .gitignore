@@ -6,3 +6,4 @@
 dump.rdb
 node_modules/
 packer_cache/
+settings.cfg
