@@ -31,6 +31,10 @@ mount -t nfs4 $IMAGING_SERVER:/images /nfs
 # sfdisk easily handles MBR partitions, but not GPT
 #sfdisk /dev/sda < /nfs/$IMAGE_NAME/partitiontable.txt
 
+parted < /nfs/$IMAGE_NAME/partitions.txt
+parted -l
+sleep 5
+
 # Add Network Route for Mulitcasting
 route add -net 224.0.0.0 netmask 240.0.0.0 dev eth0
 
