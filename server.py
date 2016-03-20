@@ -12,8 +12,10 @@ config = configparser.RawConfigParser()
 configFilePath = 'settings.cfg'
 config.read(configFilePath)
 redishost = config['db']['host']
-redisport = config['db']['port']
+redisport = int(config['db']['port'])
 redisdb = config['db']['db']
+interface = config['setup']['interface']
+
 redis = Redis(host=redishost, port=redisport, db=redisdb)
 global osDir
 osDir = config['setup']['imagepath']
@@ -170,7 +172,7 @@ def multicast(inProgress=False, minClients='47'):
         redis.set('inProgress', currentStatus)
         if currentStatus == 'True':
             print("Starting process")
-            udpCommand = ["oldserverfiles/sendMulticastImage.sh", osDir, selectedImage, minClients]
+            udpCommand = [os.getcwd() + "/sendMulticastImage.sh", osDir, selectedImage, interface, minClients]
             cmd = subprocess.Popen(udpCommand, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
             pid = cmd.pid
             return redirect('/multicast')
