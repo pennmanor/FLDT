@@ -13,7 +13,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-IMAGING_SERVER="10.0.0.1"
+IMAGING_SERVER="nfsserver"
 MACADDR=`ifconfig | grep "eth0" | tr -s ' ' | cut -d ' ' -f5`
 wget -O hostname http://$IMAGING_SERVER/api/hostname?mac=$MACADDR 2> /dev/null
 wget -O currentImage http://$IMAGING_SERVER/api/currentImage 2> /dev/null
