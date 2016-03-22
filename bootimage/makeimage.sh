@@ -14,6 +14,8 @@
 #   limitations under the License.
   
 
+server=$(awk -F "=" '/nfsserver/ { print $2 }' ../settings.cfg | tr -d ' ') 
+
 cd image
 chmod 777 init
 rm ../images/*
@@ -26,6 +28,7 @@ do
 	echo "Building $BASEFILE.img"
 	cp $FILE image.sh
 	chmod 777 image.sh
+	sed -i "s/nfsserver/$server/g" image.sh
 	find . | cpio -o -H newc | gzip -fc > ../images/$BASEFILE.img
 	echo "Done"
 done

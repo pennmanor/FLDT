@@ -1,6 +1,8 @@
 [setup]
-imagepath = /media/Storage
+imagepath = /images
 http_port = 8080
+interface = eth1
+nfsserver = 10.0.0.1
 
 [db]
 host = 127.0.0.1

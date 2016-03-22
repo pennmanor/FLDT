@@ -13,7 +13,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-IMAGING_SERVER="10.0.0.1"
+IMAGING_SERVER="nfsserver"
 IMAGING_PORT="8080"
 MACADDR=`ifconfig | grep "ether" | tr -s ' ' | cut -d ' ' -f3 | tr -d ':'`
 wget -O hostname http://$IMAGING_SERVER:$IMAGING_PORT/api/hostname?mac=$MACADDR 2> /dev/null
@@ -33,11 +33,13 @@ mount -t nfs4 $IMAGING_SERVER:/images /nfs
 
 # parted allows for GPT disks. Because of the differences
 #  use a different partition file, so it doesn't choke
-parted --pretend-input-tty < /nfs/$IMAGE_NAME/partitions.txt
+parted < /nfs/$IMAGE_NAME/partitions.txt
 parted -l
 
 hdparm -z /dev/sda
 mdev -s
+
+sleep 5
 
 for f in `find /nfs/$IMAGE_NAME/sd* -type f | sort -nr`
 do
